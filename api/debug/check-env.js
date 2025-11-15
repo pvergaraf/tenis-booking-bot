@@ -1,14 +1,14 @@
 import twilio from 'twilio';
 
-// Debug endpoint to check environment variables AND test Twilio
+// Debug endpoint - SECURED with auth
 export default async function handler(req, res) {
-  const envVars = {
-    TWILIO_WHATSAPP_NUMBER: process.env.TWILIO_WHATSAPP_NUMBER || 'NOT SET',
-    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID ? 'SET (hidden)' : 'NOT SET',
-    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN ? 'SET (hidden)' : 'NOT SET',
-    WHATSAPP_GROUP_NUMBER: process.env.WHATSAPP_GROUP_NUMBER || 'NOT SET',
-    TENNIS_COURT_NUMBER: process.env.TENNIS_COURT_NUMBER || 'NOT SET'
-  };
+  // Require authorization
+  const authHeader = req.headers['authorization'];
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   // Try to send a test message
   let testResult = null;
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       const message = await client.messages.create({
         from: `whatsapp:${fromNumber}`,
         to: `whatsapp:${toNumber}`,
-        body: '🧪 Debug test from Vercel - checking which number is used'
+        body: '🧪 Debug test - checking which number is used'
       });
 
       testResult = {
@@ -32,7 +32,9 @@ export default async function handler(req, res) {
         sid: message.sid,
         from: message.from,
         to: message.to,
-        status: message.status
+        status: message.status,
+        configuredFrom: fromNumber,
+        actualFrom: message.from
       };
     } else {
       testResult = { success: false, error: 'Missing credentials' };
@@ -46,9 +48,6 @@ export default async function handler(req, res) {
     };
   }
 
-  return res.status(200).json({
-    environmentVariables: envVars,
-    testMessage: testResult
-  });
+  return res.status(200).json(testResult);
 }
 
