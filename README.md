@@ -39,27 +39,86 @@ npm install
 2. Get WhatsApp sandbox number or approved WhatsApp Business number
 3. Get Account SID and Auth Token from Twilio Console
 
-#### 3.1. Set up WhatsApp Template (Recommended for Production)
+#### 3.1. Set up WhatsApp Templates (Recommended for Production)
 
-For production use with WhatsApp Business API, you'll need to create and get approved a message template:
+For production use with WhatsApp Business API, you'll need to create and get approved **3 message templates**:
+
+**Template 1: Weekly Reminder** (`weekly_reminder`)
 
 1. Go to **Twilio Console** > **Messaging** > **Content Template Builder**
 2. Click **Create new template**
-3. Set up the template:
-   - **Template name**: `copy_reservation` (or your preferred name)
+3. Set up:
+   - **Template name**: `weekly_reminder`
    - **Language**: Spanish
-   - **Body**: `Hola amigos! Quiero reservar una cancha el {{1}} de {{2}} a {{3}}`
+   - **Category**: UTILITY
+   - **Body**: 
+   ```
+   Recordatorio: Sistema de Reservas
+
+   Período de reservas abierto para esta semana.
+
+   Envíe su solicitud a: {{1}}
+
+   Incluya fecha y horario preferido.
+   ```
+   - Variables: `{{1}}` = Email address
+4. **Submit for WhatsApp approval**
+5. Copy the **Content SID** → `TWILIO_TEMPLATE_REMINDER_SID`
+
+**Template 2: Court Booking** (`court_booking_request`)
+
+1. Create new template
+2. Set up:
+   - **Template name**: `court_booking_request`
+   - **Language**: Spanish
+   - **Category**: UTILITY
+   - **Body**:
+   ```
+   Solicitud de reserva de cancha de tenis
+
+   Fecha: {{1}}
+   Horario: {{2}} - {{3}}
+
+   Por favor confirmar disponibilidad.
+
+   Gracias
+   ```
    - Variables:
-     - `{{1}}` = Date (e.g., "19 de noviembre de 2025")
+     - `{{1}}` = Date (e.g., "20 de noviembre de 2025")
      - `{{2}}` = Start time (e.g., "18:00")
      - `{{3}}` = End time (e.g., "20:00")
-4. **Submit for WhatsApp approval** (usually approved in minutes/hours)
-5. Once approved, copy the **Content SID** (e.g., `HX9c1325696ba2847d4b8f78dae5110584`)
-6. Add it to your environment variables as `TWILIO_TEMPLATE_SID`
+3. **Submit for WhatsApp approval**
+4. Copy the **Content SID** → `TWILIO_TEMPLATE_BOOKING_SID`
+
+**Template 3: Booking Confirmation** (`booking_confirmation`)
+
+1. Create new template
+2. Set up:
+   - **Template name**: `booking_confirmation`
+   - **Language**: Spanish
+   - **Category**: UTILITY
+   - **Body**:
+   ```
+   Reserva Confirmada
+
+   Solicitante: {{1}}
+   Fecha: {{2}}
+   Horario: {{3}} - {{4}}
+
+   La reserva ha sido enviada al club.
+   ```
+   - Variables:
+     - `{{1}}` = Name (e.g., "Pablo")
+     - `{{2}}` = Date (e.g., "20 de noviembre de 2025")
+     - `{{3}}` = Start time (e.g., "18:00")
+     - `{{4}}` = End time (e.g., "20:00")
+3. **Submit for WhatsApp approval**
+4. Copy the **Content SID** → `TWILIO_TEMPLATE_CONFIRMATION_SID`
 
 **Note**: 
-- If `TWILIO_TEMPLATE_SID` is set, the bot will use template messages (required for first contact)
-- If not set, the bot falls back to regular messages (works for sandbox or within 24hr sessions)
+- If template SIDs are set, the bot uses template messages (required for WhatsApp Business API)
+- If not set, falls back to regular messages (works with sandbox or within 24hr sessions)
+- Templates typically get approved in 15 minutes to 2 hours
 
 ### 4. Set up Mailgun
 
@@ -97,8 +156,10 @@ Copy `.env.example` to `.env.local` for local development, then set all variable
 - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
 - `CRON_SECRET` - Random secret for securing cron endpoints (optional but recommended)
 
-**Optional Variables:**
-- `TWILIO_TEMPLATE_SID` - Your approved WhatsApp Content Template SID (for production)
+**Optional Variables (WhatsApp Templates):**
+- `TWILIO_TEMPLATE_REMINDER_SID` - Template for weekly reminder (for production)
+- `TWILIO_TEMPLATE_BOOKING_SID` - Template for court booking (for production)
+- `TWILIO_TEMPLATE_CONFIRMATION_SID` - Template for booking confirmation (for production)
 - `REMINDER_CRON_SCHEDULE` - Cron schedule for reminder (default: "0 12 * * 3" - Wednesdays 9am Santiago)
 - `BOOKING_CRON_SCHEDULE` - Cron schedule for booking sender (default: "0 4 * * 4" - Thursdays 1am Santiago)
 

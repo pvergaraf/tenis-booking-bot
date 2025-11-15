@@ -60,15 +60,15 @@ export default async function handler(req, res) {
         });
 
         // Send to court number using template message
-        const templateSid = process.env.TWILIO_TEMPLATE_SID;
+        const bookingTemplateSid = process.env.TWILIO_TEMPLATE_BOOKING_SID;
         
         let sendResult;
         
-        if (templateSid) {
-          // Use approved WhatsApp template
+        if (bookingTemplateSid) {
+          // Use approved WhatsApp template for booking
           sendResult = await sendWhatsAppTemplateMessage(
             courtNumber,
-            templateSid,
+            bookingTemplateSid,
             {
               '1': formattedDate,
               '2': reservation.initial_time,
@@ -110,14 +110,30 @@ export default async function handler(req, res) {
           .eq('id', reservation.id);
 
         // Send confirmation to group
-        const confirmationMessage = formatGroupConfirmation(
-          reservation.sender_name,
-          reservation.reservation_date,
-          reservation.initial_time,
-          reservation.end_time
-        );
-
-        await sendWhatsAppMessage(groupNumber, confirmationMessage);
+        const confirmationTemplateSid = process.env.TWILIO_TEMPLATE_CONFIRMATION_SID;
+        
+        if (confirmationTemplateSid) {
+          // Use approved WhatsApp template for confirmation
+          await sendWhatsAppTemplateMessage(
+            groupNumber,
+            confirmationTemplateSid,
+            {
+              '1': reservation.sender_name || 'Usuario',
+              '2': formattedDate,
+              '3': reservation.initial_time,
+              '4': reservation.end_time
+            }
+          );
+        } else {
+          // Fallback to regular message (for sandbox or session messages)
+          const confirmationMessage = formatGroupConfirmation(
+            reservation.sender_name,
+            reservation.reservation_date,
+            reservation.initial_time,
+            reservation.end_time
+          );
+          await sendWhatsAppMessage(groupNumber, confirmationMessage);
+        }
 
         results.push({
           reservationId: reservation.id,

@@ -1,8 +1,8 @@
-import { sendWhatsAppMessage } from '../../lib/twilio.js';
+import { sendWhatsAppMessage, sendWhatsAppTemplateMessage } from '../../lib/twilio.js';
 
 /**
  * Cron job to send periodic reminder to WhatsApp group
- * Runs on Mondays (schedule configured in vercel.json)
+ * Runs on Wednesdays (schedule configured in vercel.json)
  */
 export default async function handler(req, res) {
   // Verify this is called by Vercel Cron (optional security)
@@ -25,9 +25,25 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'RESERVATION_EMAIL not configured' });
     }
 
-    const message = `Escríbeme tu reserva de tenis a ${reservationEmail}`;
-
-    const result = await sendWhatsAppMessage(groupNumber, message);
+    // Try to use template message first, fallback to regular message
+    const templateSid = process.env.TWILIO_TEMPLATE_REMINDER_SID;
+    
+    let result;
+    
+    if (templateSid) {
+      // Use approved WhatsApp template for reminder
+      result = await sendWhatsAppTemplateMessage(
+        groupNumber,
+        templateSid,
+        {
+          '1': reservationEmail
+        }
+      );
+    } else {
+      // Fallback to regular message (for sandbox or session messages)
+      const message = `Escríbeme tu reserva de tenis a ${reservationEmail}`;
+      result = await sendWhatsAppMessage(groupNumber, message);
+    }
 
     if (!result.success) {
       return res.status(500).json({ 
