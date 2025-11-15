@@ -1,0 +1,20 @@
+{
+  "name": "tenis-booking-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Automated WhatsApp tennis court booking bot",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "twilio": "^4.20.0",
+    "mailgun.js": "^9.4.0",
+    "form-data": "^4.0.0",
+    "openai": "^4.20.0"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}
+
