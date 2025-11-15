@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabase.js';
-import { sendWhatsAppMessage } from '../../lib/twilio.js';
-import { formatBookingMessage, formatGroupConfirmation } from '../../lib/parser.js';
+import { sendWhatsAppMessage, sendWhatsAppTemplateMessage } from '../../lib/twilio.js';
+import { formatGroupConfirmation } from '../../lib/parser.js';
 
 /**
  * Cron job to send pending reservations to tennis court number
@@ -52,15 +52,34 @@ export default async function handler(req, res) {
 
     for (const reservation of reservations) {
       try {
-        // Format booking message
-        const bookingMessage = formatBookingMessage(
-          reservation.reservation_date,
-          reservation.initial_time,
-          reservation.end_time
-        );
+        // Format date for template
+        const formattedDate = new Date(reservation.reservation_date).toLocaleDateString('es-ES', { 
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric' 
+        });
 
-        // Send to court number
-        const sendResult = await sendWhatsAppMessage(courtNumber, bookingMessage);
+        // Send to court number using template message
+        const templateSid = process.env.TWILIO_TEMPLATE_SID;
+        
+        let sendResult;
+        
+        if (templateSid) {
+          // Use approved WhatsApp template
+          sendResult = await sendWhatsAppTemplateMessage(
+            courtNumber,
+            templateSid,
+            {
+              '1': formattedDate,
+              '2': reservation.initial_time,
+              '3': reservation.end_time
+            }
+          );
+        } else {
+          // Fallback to regular message (for sandbox or session messages)
+          const bookingMessage = `Hola amigos! Quiero reservar una cancha el ${formattedDate} de ${reservation.initial_time} a ${reservation.end_time}`;
+          sendResult = await sendWhatsAppMessage(courtNumber, bookingMessage);
+        }
 
         if (!sendResult.success) {
           // Mark as failed

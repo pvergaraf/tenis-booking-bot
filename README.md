@@ -39,6 +39,28 @@ npm install
 2. Get WhatsApp sandbox number or approved WhatsApp Business number
 3. Get Account SID and Auth Token from Twilio Console
 
+#### 3.1. Set up WhatsApp Template (Recommended for Production)
+
+For production use with WhatsApp Business API, you'll need to create and get approved a message template:
+
+1. Go to **Twilio Console** > **Messaging** > **Content Template Builder**
+2. Click **Create new template**
+3. Set up the template:
+   - **Template name**: `copy_reservation` (or your preferred name)
+   - **Language**: Spanish
+   - **Body**: `Hola amigos! Quiero reservar una cancha el {{1}} de {{2}} a {{3}}`
+   - Variables:
+     - `{{1}}` = Date (e.g., "19 de noviembre de 2025")
+     - `{{2}}` = Start time (e.g., "18:00")
+     - `{{3}}` = End time (e.g., "20:00")
+4. **Submit for WhatsApp approval** (usually approved in minutes/hours)
+5. Once approved, copy the **Content SID** (e.g., `HX9c1325696ba2847d4b8f78dae5110584`)
+6. Add it to your environment variables as `TWILIO_TEMPLATE_SID`
+
+**Note**: 
+- If `TWILIO_TEMPLATE_SID` is set, the bot will use template messages (required for first contact)
+- If not set, the bot falls back to regular messages (works for sandbox or within 24hr sessions)
+
 ### 4. Set up Mailgun
 
 1. Create a Mailgun account (free tier: 100 emails/day)
@@ -76,8 +98,9 @@ Copy `.env.example` to `.env.local` for local development, then set all variable
 - `CRON_SECRET` - Random secret for securing cron endpoints (optional but recommended)
 
 **Optional Variables:**
-- `REMINDER_CRON_SCHEDULE` - Cron schedule for reminder (default: "0 9 * * 1" - 9am Mondays)
-- `BOOKING_CRON_SCHEDULE` - Cron schedule for booking sender (default: "0 8 * * 4" - 8am Thursdays)
+- `TWILIO_TEMPLATE_SID` - Your approved WhatsApp Content Template SID (for production)
+- `REMINDER_CRON_SCHEDULE` - Cron schedule for reminder (default: "0 12 * * 3" - Wednesdays 9am Santiago)
+- `BOOKING_CRON_SCHEDULE` - Cron schedule for booking sender (default: "0 4 * * 4" - Thursdays 1am Santiago)
 
 ### 7. Deploy to Vercel
 
