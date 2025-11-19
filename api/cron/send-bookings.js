@@ -1,11 +1,13 @@
 import { supabase } from '../../lib/supabase.js';
 import { sendWhatsAppMessage, sendWhatsAppTemplateMessage } from '../../lib/twilio.js';
 import { formatGroupConfirmation } from '../../lib/parser.js';
+import { parseReservations } from '../../lib/openai.js';
+import { sendAutoReply } from '../../lib/mailgun.js';
 
 /**
  * Cron job to send pending reservations to tennis court number
  * Runs on Thursdays (schedule configured in vercel.json)
- * Sends one WhatsApp message per reservation and confirms to group
+ * First processes any pending emails, then sends reservations
  */
 export default async function handler(req, res) {
   // Verify this is called by Vercel Cron (optional security)
@@ -17,6 +19,68 @@ export default async function handler(req, res) {
   }
 
   try {
+    // STEP 1: Process any pending emails first
+    console.log('Step 1: Processing pending emails before sending bookings...');
+    const { data: pendingEmails } = await supabase
+      .from('emails')
+      .select('*')
+      .eq('status', 'pending')
+      .order('received_at', { ascending: true });
+
+    if (pendingEmails && pendingEmails.length > 0) {
+      console.log(`Found ${pendingEmails.length} pending emails to process`);
+      
+      for (const email of pendingEmails) {
+        try {
+          const parseResult = await parseReservations(email.body, email.from_email, email.from_name);
+          
+          if (parseResult.success) {
+            const reservations = parseResult.reservations || [];
+            
+            if (reservations.length > 0) {
+              const reservationRecords = reservations.map(res => ({
+                email_id: email.id,
+                sender_name: res.senderName,
+                sender_email: res.senderEmail,
+                reservation_date: res.date,
+                initial_time: res.initial_time,
+                end_time: res.end_time,
+                parsed_data: parseResult.rawResponse,
+                status: 'pending'
+              }));
+
+              await supabase.from('reservations').insert(reservationRecords);
+            }
+            
+            await supabase.from('emails').update({ 
+              status: 'processed', 
+              processed_at: new Date().toISOString() 
+            }).eq('id', email.id);
+            
+            await sendAutoReply(email.from_email, email.from_name, reservations);
+          } else {
+            await supabase.from('emails').update({ 
+              status: 'failed', 
+              error_message: parseResult.error,
+              processed_at: new Date().toISOString() 
+            }).eq('id', email.id);
+          }
+        } catch (error) {
+          console.error(`Error processing email ${email.id}:`, error);
+          await supabase.from('emails').update({ 
+            status: 'failed', 
+            error_message: error.message,
+            processed_at: new Date().toISOString() 
+          }).eq('id', email.id);
+        }
+      }
+      console.log('Finished processing pending emails');
+    } else {
+      console.log('No pending emails to process');
+    }
+
+    // STEP 2: Send reservations to court
+    console.log('Step 2: Sending reservations to court...');
     const courtNumber = process.env.TENNIS_COURT_NUMBER;
     const groupNumber = process.env.WHATSAPP_GROUP_NUMBER;
 

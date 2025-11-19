@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/process-pending-emails",
-      "schedule": "0 6 * * *"
+      "schedule": "30 3 * * *"
     }
   ]
 }
