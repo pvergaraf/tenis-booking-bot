@@ -72,7 +72,7 @@ export default async function handler(req, res) {
         const reservations = parseResult.reservations || [];
 
         if (reservations.length === 0) {
-          // No reservations found, mark as processed
+          // No reservations found, mark as processed but still send auto-reply
           await supabase
             .from('emails')
             .update({
@@ -80,6 +80,9 @@ export default async function handler(req, res) {
               processed_at: new Date().toISOString()
             })
             .eq('id', email.id);
+
+          // Send auto-reply indicating no reservations found
+          await sendAutoReply(email.from_email, email.from_name, []);
 
           results.push({
             emailId: email.id,
@@ -133,8 +136,8 @@ export default async function handler(req, res) {
           })
           .eq('id', email.id);
 
-        // Send auto-reply confirmation email
-        await sendAutoReply(email.from_email, email.from_name);
+        // Send auto-reply confirmation email with reservation details
+        await sendAutoReply(email.from_email, email.from_name, reservations);
 
         results.push({
           emailId: email.id,

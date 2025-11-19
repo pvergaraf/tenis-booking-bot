@@ -1,0 +1,2 @@
+curl -X POST "https://tenis-3e7eit1vm-pablo-vergaras-projects-964a86f2.vercel.app/api/debug/check-env" \
+  -H "Authorization: Bearer kMAVFfOmTxyDZi5AA6fkSKOsIc4dr3IAsX2"
