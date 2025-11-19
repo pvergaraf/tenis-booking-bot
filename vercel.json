@@ -7,10 +7,6 @@
     {
       "path": "/api/cron/send-bookings",
       "schedule": "0 4 * * 4"
-    },
-    {
-      "path": "/api/cron/process-pending-emails",
-      "schedule": "30 3 * * *"
     }
   ]
 }
