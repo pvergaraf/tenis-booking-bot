@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { parseReservations } from '../lib/openai.js';
 import { sendAutoReply } from '../lib/mailgun.js';
+import { isAdminEmail, parseAdminCommand, handleAdminCommand } from '../lib/admin.js';
 
 /**
  * Process unprocessed emails and extract reservations
@@ -43,6 +44,53 @@ export default async function handler(req, res) {
 
     for (const email of emails) {
       try {
+        // Allow admin users to manage pending reservations via email commands
+        if (isAdminEmail(email.from_email)) {
+          const adminCommand = parseAdminCommand(email.subject, email.body);
+          
+          if (adminCommand) {
+            try {
+              const commandResult = await handleAdminCommand(adminCommand, email);
+
+              await supabase
+                .from('emails')
+                .update({
+                  status: 'processed',
+                  processed_at: new Date().toISOString(),
+                  error_message: null
+                })
+                .eq('id', email.id);
+
+              results.push({
+                emailId: email.id,
+                status: 'admin-command',
+                command: adminCommand.type,
+                commandResult
+              });
+              continue;
+            } catch (adminError) {
+              console.error(`Error handling admin command for email ${email.id}:`, adminError);
+
+              await supabase
+                .from('emails')
+                .update({
+                  status: 'failed',
+                  error_message: adminError.message,
+                  processed_at: new Date().toISOString()
+                })
+                .eq('id', email.id);
+
+              results.push({
+                emailId: email.id,
+                status: 'failed',
+                error: adminError.message,
+                command: adminCommand.type
+              });
+              continue;
+            }
+          }
+        }
+
         // Parse email with OpenAI
         const parseResult = await parseReservations(
           email.body,

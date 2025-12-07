@@ -10,6 +10,7 @@ Automated WhatsApp bot that collects tennis court reservations via email and sen
 - **Auto-Reply**: Sends confirmation email when reservation is received
 - **Automated Booking**: Sends booking messages to court number on Thursdays
 - **Group Confirmation**: Sends confirmation to WhatsApp group for each booking
+- **Email Management**: Admins can list or delete pending reservations directly via email commands
 
 ## Architecture
 
@@ -151,6 +152,7 @@ Copy `.env.example` to `.env.local` for local development, then set all variable
 - `MAILGUN_API_KEY` - Your Mailgun API key
 - `MAILGUN_DOMAIN` - Your verified Mailgun domain (e.g., `mg.yourdomain.com` or sandbox domain)
 - `RESERVATION_EMAIL` - Email address for reservations (must match Mailgun route)
+- `RESERVATION_ADMIN_EMAILS` - Comma separated list of admin emails allowed to manage pending reservations
 - `OPENAI_API_KEY` - Your OpenAI API key
 - `SUPABASE_URL` - Your Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
@@ -193,6 +195,30 @@ After an email is received via Mailgun webhook, you can either:
 4. **Auto-reply**: Confirmation email sent to user
 5. **Thursday**: Cron job sends all pending reservations to court number
 6. **Group confirmation**: Confirmation message sent to WhatsApp group for each booking
+
+## Managing Pending Reservations via Email
+
+Admins listed in `RESERVATION_ADMIN_EMAILS` can send commands from their email address to the same inbox handled by Mailgun. Commands are parsed from the email subject or the first non-empty line in the body:
+
+- `LIST` — receives an email with every pending reservation (ID, requester, date & time).
+- `DELETE <id>` — removes a pending reservation. You can use the full UUID or just the first 8 characters shown in the LIST response.
+- `HELP` — returns the list of available commands and examples.
+
+Example email:
+
+```
+Subject: LIST
+```
+
+or
+
+```
+Subject: Gestion
+
+LIST
+```
+
+When a DELETE command succeeds, the bot replies with a summary indicating which reservations were removed and if any IDs were missing or ambiguous.
 
 ## API Endpoints
 
