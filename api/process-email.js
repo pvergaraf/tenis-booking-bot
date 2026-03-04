@@ -91,11 +91,13 @@ export default async function handler(req, res) {
           }
         }
 
-        // Parse email with OpenAI
+        // Parse email with OpenAI, using the email's received date as reference
+        // so relative dates like "próximo lunes" are calculated correctly
         const parseResult = await parseReservations(
           email.body,
           email.from_email,
-          email.from_name
+          email.from_name,
+          email.received_at
         );
 
         if (!parseResult.success) {

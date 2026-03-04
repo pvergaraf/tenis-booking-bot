@@ -32,7 +32,7 @@ export default async function handler(req, res) {
       
       for (const email of pendingEmails) {
         try {
-          const parseResult = await parseReservations(email.body, email.from_email, email.from_name);
+          const parseResult = await parseReservations(email.body, email.from_email, email.from_name, email.received_at);
           
           if (parseResult.success) {
             const reservations = parseResult.reservations || [];
@@ -117,10 +117,11 @@ export default async function handler(req, res) {
     for (const reservation of reservations) {
       try {
         // Format date for template
-        const formattedDate = new Date(reservation.reservation_date).toLocaleDateString('es-ES', { 
-          day: 'numeric', 
-          month: 'long', 
-          year: 'numeric' 
+        const formattedDate = new Date(reservation.reservation_date).toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'America/Santiago'
         });
 
         // Send to court number using template message
