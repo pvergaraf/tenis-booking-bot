@@ -116,12 +116,12 @@ export default async function handler(req, res) {
 
     for (const reservation of reservations) {
       try {
-        // Format date for template
-        const formattedDate = new Date(reservation.reservation_date).toLocaleDateString('es-ES', {
+        // Format date for template - parse YYYY-MM-DD without timezone conversion
+        const [year, month, day] = reservation.reservation_date.split('-').map(Number);
+        const formattedDate = new Date(year, month - 1, day).toLocaleDateString('es-ES', {
           day: 'numeric',
           month: 'long',
-          year: 'numeric',
-          timeZone: 'America/Santiago'
+          year: 'numeric'
         });
 
         // Send to court number using template message

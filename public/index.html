@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservas de Tenis</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    h1 { font-size: 1.5rem; font-weight: 600; }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid #ddd;
+      color: #666;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .btn-logout:hover { background: #f0f0f0; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    input {
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus { border-color: #2563eb; }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 10px 20px;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-sent { background: #d1fae5; color: #065f46; }
+    .status-failed { background: #fee2e2; color: #991b1b; }
+
+    .reservation-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .reservation-item:last-child { border-bottom: none; }
+
+    .reservation-info { flex: 1; }
+
+    .reservation-date { font-weight: 600; font-size: 0.95rem; }
+
+    .reservation-time { color: #666; font-size: 0.85rem; margin-top: 2px; }
+
+    .reservation-sender { color: #999; font-size: 0.8rem; margin-top: 2px; }
+
+    .reservation-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .empty {
+      text-align: center;
+      color: #999;
+      padding: 24px 0;
+      font-size: 0.9rem;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .filter-btn {
+      background: #f0f0f0;
+      color: #666;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: #1a1a1a;
+      color: #fff;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #fff;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .toast.show { opacity: 1; }
+    .toast.success { background: #065f46; }
+    .toast.error { background: #991b1b; }
+
+    /* Login screen */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .login-card {
+      background: #fff;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .login-card h1 {
+      margin-bottom: 8px;
+    }
+
+    .login-card p {
+      color: #666;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+
+    .login-card .form-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .login-card input {
+      width: 100%;
+    }
+
+    .login-message {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: #065f46;
+      background: #d1fae5;
+      padding: 12px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    #app { display: none; }
+    #login { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Login -->
+  <div id="login" class="login-container">
+    <div class="login-card">
+      <h1>Reservas de Tenis</h1>
+      <p>Ingresa tu email para recibir un link de acceso</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" placeholder="tu@email.com" required>
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">Enviar link</button>
+      </form>
+      <div class="login-message" id="login-message">
+        Revisa tu email. Te enviamos un link de acceso.
+      </div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="container">
+    <header>
+      <h1>Reservas de Tenis</h1>
+      <button class="btn-logout" id="logout-btn">Salir</button>
+    </header>
+
+    <div class="card">
+      <h2>Nueva reserva</h2>
+      <form id="reservation-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="date">Fecha</label>
+            <input type="date" id="date" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="start">Inicio</label>
+            <input type="time" id="start" value="20:00" required>
+          </div>
+          <div class="form-group">
+            <label for="end">Fin</label>
+            <input type="time" id="end" value="22:00" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nombre (opcional)</label>
+            <input type="text" id="name" placeholder="Tu nombre">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" id="submit-btn">Crear reserva</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Reservas</h2>
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="all">Todas</button>
+        <button class="filter-btn" data-filter="pending">Pendientes</button>
+        <button class="filter-btn" data-filter="sent">Enviadas</button>
+        <button class="filter-btn" data-filter="failed">Fallidas</button>
+      </div>
+      <div id="reservations-list">
+        <div class="empty">Cargando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://ahmirzbpttptlfwvinen.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFobWlyemJwdHRwdGxmd3ZpbmVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMTUzOTAsImV4cCI6MjA3ODc5MTM5MH0.AyD-x9gihBBaZkmj0fQ_IsczgREm-L0hHiIij9E12H4';
+
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentFilter = 'all';
+    let allReservations = [];
+
+    // --- Auth ---
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        showApp();
+      } else {
+        document.getElementById('login').style.display = 'flex';
+      }
+
+      sb.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          showApp();
+        } else {
+          document.getElementById('app').style.display = 'none';
+          document.getElementById('login').style.display = 'flex';
+        }
+      });
+    }
+
+    function showApp() {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      fetchReservations();
+    }
+
+    // Magic link login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const btn = document.getElementById('login-btn');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin }
+      });
+
+      if (error) {
+        showToast(error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Enviar link';
+      } else {
+        document.getElementById('login-message').style.display = 'block';
+        btn.textContent = 'Link enviado';
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await sb.auth.signOut();
+    });
+
+    // --- Reservations ---
+    function getNextMonday() {
+      const d = new Date();
+      const day = d.getDay();
+      const diff = day === 0 ? 1 : 8 - day;
+      d.setDate(d.getDate() + diff);
+      return d.toISOString().split('T')[0];
+    }
+
+    document.getElementById('date').value = getNextMonday();
+
+    function showToast(message, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function formatDate(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      return date.toLocaleDateString('es-ES', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function formatTime(t) {
+      return t.substring(0, 5);
+    }
+
+    async function fetchReservations() {
+      const { data, error } = await sb
+        .from('reservations')
+        .select('*')
+        .order('reservation_date', { ascending: true })
+        .order('initial_time', { ascending: true });
+
+      if (error) {
+        showToast('Error al cargar reservas', 'error');
+        return;
+      }
+
+      allReservations = data || [];
+      renderReservations();
+    }
+
+    function renderReservations() {
+      const list = document.getElementById('reservations-list');
+      const filtered = currentFilter === 'all'
+        ? allReservations
+        : allReservations.filter(r => r.status === currentFilter);
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="empty">No hay reservas</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(r => `
+        <div class="reservation-item">
+          <div class="reservation-info">
+            <div class="reservation-date">${formatDate(r.reservation_date)}</div>
+            <div class="reservation-time">${formatTime(r.initial_time)} - ${formatTime(r.end_time)}</div>
+            ${r.sender_name ? `<div class="reservation-sender">${escapeHtml(r.sender_name)}</div>` : ''}
+          </div>
+          <div class="reservation-actions">
+            <span class="status-badge status-${r.status}">${r.status}</span>
+            ${r.status === 'pending' ? `<button class="btn-danger" onclick="deleteReservation('${r.id}')">Eliminar</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // Create
+    document.getElementById('reservation-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+
+      const { error } = await sb
+        .from('reservations')
+        .insert({
+          reservation_date: document.getElementById('date').value,
+          initial_time: document.getElementById('start').value,
+          end_time: document.getElementById('end').value,
+          sender_name: document.getElementById('name').value || null,
+          status: 'pending'
+        });
+
+      if (error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast('Reserva creada');
+        document.getElementById('name').value = '';
+        fetchReservations();
+      }
+
+      btn.disabled = false;
+    });
+
+    // Delete
+    async function deleteReservation(id) {
+      if (!confirm('Eliminar esta reserva?')) return;
+
+      const { error } = await sb
+        .from('reservations')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        showToast(error.message, 'error');
+      } else {
+        showToast('Reserva eliminada');
+        fetchReservations();
+      }
+    }
+
+    // Filters
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelector('.filter-btn.active').classList.remove('active');
+        btn.classList.add('active');
+        currentFilter = btn.dataset.filter;
+        renderReservations();
+      });
+    });
+
+    init();
+  </script>
+</body>
+</html>
