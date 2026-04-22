@@ -6,10 +6,6 @@
     {
       "path": "/api/cron/send-reminder",
       "schedule": "0 12 * * 3"
-    },
-    {
-      "path": "/api/cron/send-bookings",
-      "schedule": "0 11 * * 4"
     }
   ]
 }

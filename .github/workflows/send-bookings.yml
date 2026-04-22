@@ -1,0 +1,19 @@
+name: Send Bookings (Thursday 7 AM Chile)
+
+on:
+  schedule:
+    # 11:00 UTC Thursday = 7:00 AM Chile (GMT-4, horario estándar)
+    # GitHub Actions respeta el minuto exacto (a diferencia de Vercel Hobby)
+    - cron: '0 11 * * 4'
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call send-bookings endpoint
+        run: |
+          curl --fail --show-error --silent \
+            -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/send-bookings"
