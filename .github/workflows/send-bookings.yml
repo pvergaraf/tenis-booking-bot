@@ -13,7 +13,8 @@ jobs:
     steps:
       - name: Call send-bookings endpoint
         run: |
-          curl --fail --show-error --silent \
+          echo "Calling: ${{ secrets.APP_URL }}/api/cron/send-bookings"
+          curl -i --show-error \
             -X GET \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "${{ secrets.APP_URL }}/api/cron/send-bookings"
