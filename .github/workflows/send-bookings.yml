@@ -2,9 +2,8 @@ name: Send Bookings (Thursday 7 AM Chile)
 
 on:
   schedule:
-    # 11:00 UTC Thursday = 7:00 AM Chile (GMT-4, horario estándar)
-    # GitHub Actions respeta el minuto exacto (a diferencia de Vercel Hobby)
-    - cron: '0 11 * * 4'
+    # 10:00 UTC Thursday = 6:00 AM Chile (GMT-4) + ~1h retraso típico de GitHub Actions = ~7:00 AM Chile
+    - cron: '0 10 * * 4'
   workflow_dispatch:
 
 jobs:
